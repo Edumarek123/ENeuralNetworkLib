@@ -5,7 +5,7 @@
 
 #include <math.h>
 
-//------------------CONSTRUTORES&DESTRUTORES-------------------//
+//------------------CONSTRUCTORS&DESTRUCTORS-------------------//
 EMatrix::EMatrix()
 {
     lines = 0;
@@ -57,7 +57,7 @@ EMatrix::~EMatrix()
     free(matrix);
 }
 
-//---------------------------METODOS---------------------------//
+//---------------------------METHODS---------------------------//
 
 void EMatrix::initilize_values(const _ponto n, bool isRand)
 {
@@ -147,78 +147,7 @@ void EMatrix::map(const funType f)
     }
 }
 
-bool EMatrix::verificar_igualdade(const EMatrix *m)
-{
-    for(size_t i = 0; i < lines; i++)
-    {
-        for(size_t j = 0; j < columns; j++)
-        {
-            if(matrix[i][j] != m->matrix[i][j])
-            {
-              return false;
-            }
-        }
-    }
-
-    return true;
-}
-
-void EMatrix::softmax()
-{
-    _ponto sum = 0;
-
-    if(lines == 1){
-        for(size_t i = 0; i < columns; i++)
-        {
-            sum += exp(matrix[0][i]);
-        }
-        
-        for(size_t i = 0; i < columns; i++)
-        {
-            matrix[0][i] = exp(matrix[0][i]) / sum;
-        }
-    }
-
-    else if(columns == 1)
-    {
-        for(size_t i = 0; i < lines; i++)
-        {
-            sum += exp(matrix[i][0]);
-        }
-
-        for(size_t i = 0; i < lines; i++)
-        {
-            matrix[i][0] = exp(matrix[i][0]) / sum;
-        }
-    }
-
-    else
-    {
-        //erro
-        return;
-    }
-}
-
-void EMatrix::binary()
-{   
-    for(size_t i = 0; i < lines; i++)
-    {
-        for(size_t j = 0; j < columns; j++)
-        {
-            if(matrix[i][j]>0.5)
-            {
-                matrix[i][j] = 1;
-            }
-            else
-            {
-                matrix[i][j] = 0;
-            }
-        }
-
-    }
-}
-
-//---------------------------FUNCOES---------------------------//
+//---------------------------FUNCTIONS---------------------------//
 
 EMatrix sub(const EMatrix *A, const EMatrix *B)
 {
@@ -305,22 +234,7 @@ EMatrix map(const EMatrix *m , const funType f)
     return result;
 }
 
-bool verificar_igualdade(const EMatrix *A, const EMatrix *B)
-{
-    for(size_t i = 0; i < A->lines; i++)
-    {
-        for(size_t j = 0; j < A->columns; j++)
-        {
-            if(A->matrix[i][j] != B->matrix[i][j])
-            {
-                return false;
-            }
-        }
-    }
-
-    return true;
-}
-
+//----------------------SEILA FUNCTIONS--------------------//
 EMatrix softmax(const EMatrix *m)
 {
     EMatrix result(m->lines, m->columns);
@@ -359,7 +273,7 @@ EMatrix softmax(const EMatrix *m)
     return result;
 }
 
-EMatrix binary(const EMatrix *m)
+EMatrix convert_to_binary(const EMatrix *m)
 {   
     EMatrix result(m->lines, m->columns);
 
@@ -367,7 +281,7 @@ EMatrix binary(const EMatrix *m)
     {
         for(size_t j = 0; j < m->columns; j++)
         {
-            if(m->matrix[i][j] > 0.5)
+            if(m->matrix[i][j] >= 0.5)
             {
                 result.matrix[i][j] = 1;
             }
@@ -382,25 +296,8 @@ EMatrix binary(const EMatrix *m)
     return result;
 }
 
-_ponto loss(const EMatrix *A, const EMatrix *B)
-{
-    _ponto result=0;
 
-    EMatrix L(sub(A, B));
-
-    for(size_t i = 0; i < L.lines; i++)
-    {
-        for(size_t j = 0; j < L.columns; j++)
-        {
-            result += L.matrix[i][j];
-        }
-    }
-    result /= (L.lines * L.columns);
-
-    return result * result;
-}
-
-//----------------------FUNCOES DE ATIVACAO--------------------//
+//----------------------ACTIVATION FUNCTIONS--------------------//
 _ponto eSigmoide(_ponto x)
 {
     return 1 / (1 + exp(-x));
@@ -441,7 +338,148 @@ _ponto eSin(_ponto x)
     return sin(x);
 }
 
-//----------------------FUNCOES AUXILIARES---------------------//
+//----------------------METRIC FUNCTIONS---------------------//
+
+double eMean_error(const EMatrix *A, const EMatrix *B)
+{
+    double result = 0.0;
+
+    EMatrix L(sub(A, B));
+
+    for(size_t i = 0; i < L.lines; i++)
+    {
+        for(size_t j = 0; j < L.columns; j++)
+        {
+            result += L.matrix[i][j];
+        }
+    }
+    result /= (L.lines * L.columns);
+
+    return result;
+}
+
+double eMean_squared_error(const EMatrix *A, const EMatrix *B)
+{
+    double result = 0.0;
+
+    EMatrix L(sub(A, B));
+
+    for(size_t i = 0; i < L.lines; i++)
+    {
+        for(size_t j = 0; j < L.columns; j++)
+        {
+            result += L.matrix[i][j];
+        }
+    }
+    result /= (L.lines * L.columns);
+
+    return result * result;
+}
+
+double eMean_absolute_error(const EMatrix *A, const EMatrix *B)
+{
+    double result = 0.0;
+
+    EMatrix L(sub(A, B));
+
+    for(size_t i = 0; i < L.lines; i++)
+    {
+        for(size_t j = 0; j < L.columns; j++)
+        {
+            result += L.matrix[i][j];
+        }
+    }
+    result /= (L.lines * L.columns);
+
+    if(result < 0){
+        return -1.0 * result;
+    }
+
+    return result;
+}
+
+double eMean_absolute_percentage_error(const EMatrix *A, const EMatrix *B)
+{
+    double result = 0.0;
+
+    EMatrix L(sub(A, B));
+
+    for(size_t i = 0; i < L.lines; i++)
+    {
+        for(size_t j = 0; j < L.columns; j++)
+        {
+            result += L.matrix[i][j] / A->matrix[i][j];
+        }
+    }
+    result /= (L.lines * L.columns);
+    result *= 100.0;
+
+    if(result < 0){
+        return -1.0 * result;
+    }
+
+    return result;
+}
+
+double eAccuracy(const EMatrix *A, const EMatrix *B)
+{
+    double result = 0.0;
+
+    EMatrix L(sub(A, B));
+
+    for(size_t i = 0; i < L.lines; i++)
+    {
+        for(size_t j = 0; j < L.columns; j++)
+        {
+            if(L.matrix[i][j] <= ACCURACY_TOLERANCE)
+            {
+                result ++;
+            }
+        }
+    }
+    result /= (L.lines * L.columns);
+
+    return result;
+}
+
+double eBinary_accuracy(const EMatrix *A, const EMatrix *B)
+{
+    double result = 0.0;
+
+    EMatrix a = convert_to_binary(A);
+    EMatrix b = convert_to_binary(B);
+
+    for(size_t i = 0; i < a.lines; i++)
+    {
+        for(size_t j = 0; j < a.columns; j++)
+        {
+            if(a.matrix[i][j] == b.matrix[i][j])
+            {
+                result ++;
+            }
+        }
+    }
+    result /= (a.lines * a.columns);
+
+    return result;
+}
+
+double eSum(const EMatrix *A, const EMatrix *B){
+    double result = 0.0;
+
+    for(size_t i = 0; i < A->lines; i++)
+    {
+        for(size_t j = 0; j < A->columns; j++)
+        {
+            result += A->matrix[i][j];
+        }
+    }
+
+    return result;
+}
+
+
+//----------------------PRINT FUNCTIONS--------------------//
 void generic_print(const char* s)
 {
 #if notEmbedded

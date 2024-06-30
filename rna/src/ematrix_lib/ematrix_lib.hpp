@@ -14,19 +14,10 @@
 #endif
 
 typedef double _ponto;
+#define ACCURACY_TOLERANCE 0.02 //2%
+
 typedef _ponto (*funType)(_ponto);
 
-namespace ActivationFunction
-{
-    enum type
-    {
-        _eSigmoid,
-        _eRelu,
-        _eTahn,
-        _eSin,
-        LAST
-    };
-}
 
 struct EMatrix{
     size_t lines;
@@ -44,11 +35,7 @@ struct EMatrix{
     void sum(const EMatrix *m);
     void hadamard_multiplication(const EMatrix *m);
     void scalar_multiplication(const _ponto n);
-
     void map(const funType f);
-    bool verificar_igualdade(const EMatrix *m);
-    void softmax();
-    void binary();
 };
 
 EMatrix sub(const EMatrix *A, const EMatrix *B);
@@ -56,11 +43,24 @@ EMatrix scalar_multiplication(const EMatrix *m,const _ponto n);
 EMatrix dot_multiplication(const EMatrix *A, const EMatrix *B);
 EMatrix transpose(const EMatrix *L);
 EMatrix map(const EMatrix *m, const funType f);
-bool verificar_igualdade(const EMatrix *A, const EMatrix *B);
-EMatrix softmax(const EMatrix *m);
-EMatrix binary(const EMatrix *m);
-_ponto loss(const EMatrix *A, const EMatrix *B);
 
+
+bool is_equal(const EMatrix *A, const EMatrix *B, double tolerance);
+EMatrix convert_to_binary(const EMatrix *m);
+EMatrix mse_softmax(const EMatrix *m);
+
+
+namespace ActivationFunction
+{
+    enum type
+    {
+        _eSigmoid,
+        _eRelu,
+        _eTahn,
+        _eSin,
+        LAST
+    };
+}
 _ponto eSigmoide(_ponto x);
 _ponto eDsigmoide(_ponto x);
 _ponto eReLU(_ponto x);
@@ -68,6 +68,33 @@ _ponto eDReLU(_ponto x);
 _ponto eTanh(_ponto x);
 _ponto eDTanh(_ponto x);
 _ponto eSin(_ponto x);
+
+
+namespace MetricFunction
+{
+    enum type
+    {
+        _eMeanError,
+        _eMeanSquaredError,
+        _eMeanAbsoluteError,
+        _eMeanAbsolutePercentageError,
+        _eAccuracy,
+        _eBinaryAccuracy,
+        _eCategoricalAccuracy,
+        _eSum,
+        LAST
+    };
+}
+typedef double (*metricFun)(const EMatrix *A, const EMatrix *B);
+
+double eMean_error(const EMatrix *A, const EMatrix *B);
+double eMean_squared_error(const EMatrix *A, const EMatrix *B);
+double eMean_absolute_error(const EMatrix *A, const EMatrix *B);
+double eMean_absolute_percentage_error(const EMatrix *A, const EMatrix *B);
+double eAccuracy(const EMatrix *A, const EMatrix *B);
+double eBinary_accuracy(const EMatrix *A, const EMatrix *B);
+double eSum(const EMatrix *A, const EMatrix *B);
+
 
 void generic_print(const char* s);
 void generic_print_v(const _ponto &v);

@@ -42,6 +42,8 @@ ENeuralNetwork::ENeuralNetwork(int inputNodesNumber, int outputNodesNumber, int 
         ChangeActivationFunction(ActivationFunction::_eSigmoid, i);
     }
 
+    ChangeMetricFunction(MetricFunction::_eMeanSquaredError);
+
     biasLayers = (EMatrix **)malloc((layersNumber - 1) * sizeof(EMatrix *));
     for (size_t i = 0; i < layersNumber - 1; i++)
     {
@@ -341,194 +343,224 @@ void ENeuralNetwork::BackPropagation(EMatrix inputs)
 }
 
 #if notEmbedded
-float ENeuralNetwork::Train(const std::string &pathInputs, const std::string &pathExpectedOutputs, const float testsPercentage, const int epochs, const _ponto coeficienteErro)
+float ENeuralNetwork::Train(const std::string &pathInputs, const std::string &pathExpectedOutputs, const double testsPercentage, const size_t epochs)
 {
     std::ifstream inputsStream;
     std::ifstream expectedOutputsStream;
+    
     inputsStream.open(pathInputs);
     expectedOutputsStream.open(pathExpectedOutputs);
+
     unsigned long dataLength = get_stream_data_len(pathInputs);
-    unsigned long testDataLength = (int)((dataLength * testsPercentage) / 100);        // x% para testes ao final
-    unsigned long trainTestDataLength = (int)(dataLength * 0.05);                                // 5% para testes durante treinamento
-    unsigned long trainDataLength = dataLength - testDataLength - trainTestDataLength; // o restante para treinamento
+    unsigned long testDataLength = (int)((dataLength * testsPercentage) / 100.0);
+    unsigned long trainTestDataLength = (int)(dataLength * testDataInTrainPercentage);              
+    unsigned long trainDataLength = dataLength - testDataLength - trainTestDataLength;
 
-    _ponto entradaMax = get_max_value_of_data_stream(pathExpectedOutputs);
-    _ponto limiteLoss = pow(entradaMax * coeficienteErro, 2);
+    size_t fileCursor = 0;
 
-    size_t cont = 0;
-    _ponto accuracy = 0;
-    _ponto _loss = 1;
-    _ponto _val_loss = 1;
+    double accuracy = 0.0;
+    double loss = 0.0;
+    double validationAccuracy = 0.0;
+    double validationLoss = 0.0;
+
     std::string SInputs, SExpectedOutputs;
 
-    if (inputsStream.is_open() && expectedOutputsStream.is_open())
+    //TRAIN ROUTINE
+    if (!(inputsStream.is_open() && expectedOutputsStream.is_open()))
     {
-        int e = 0;
-        while (e < epochs || accuracy < 0.2)
-        {
-            if (accuracy < 1)
-            {
-                inputsStream.clear();
-                expectedOutputsStream.clear();
-                inputsStream.seekg(0);
-                expectedOutputsStream.seekg(0);
-
-                cont = 0;
-                _loss = 0;
-                while (inputsStream && outputsLayers && cont < trainDataLength)
-                {
-                    std::getline(inputsStream, SInputs);
-                    std::getline(expectedOutputsStream, SExpectedOutputs);
-                    if (SInputs.size() != 0 || SExpectedOutputs.size() != 0)
-                    {
-                        cont++;
-
-                        EMatrix *MInput(get_next_matrix_data_from_stream(SInputs));
-                        EMatrix *MexpectedOutput(get_next_matrix_data_from_stream(SExpectedOutputs));
-
-                        FeedFoward(*MInput);
-                        ComputeError(*MexpectedOutput);
-                        BackPropagation(*MInput);
-                        _loss += loss(MexpectedOutput, outputsLayers[outputLayerIndex]);
-
-                        delete MInput;
-                        delete MexpectedOutput;
-                    }
-                }
-                _loss /= trainDataLength;
-
-                accuracy = 0;
-                _val_loss = 0;
-                while (inputsStream && outputsLayers && cont < trainDataLength + trainTestDataLength)
-                {
-                    std::getline(inputsStream, SInputs);
-                    std::getline(expectedOutputsStream, SExpectedOutputs);
-                    if (SInputs.size() != 0 || SExpectedOutputs.size() != 0)
-                    {
-                        cont++;
-
-                        EMatrix *MInput(get_next_matrix_data_from_stream(SInputs));
-                        EMatrix *MexpectedOutput(get_next_matrix_data_from_stream(SExpectedOutputs));
-
-                        FeedFoward(*MInput);
-
-                        _ponto aux_loss = loss(MexpectedOutput, outputsLayers[outputLayerIndex]);
-                        if (aux_loss < limiteLoss)
-                            accuracy++;
-                        _val_loss += aux_loss;
-
-                        delete MInput;
-                        delete MexpectedOutput;
-                    }
-                }
-                accuracy /= trainTestDataLength;
-                _val_loss /= trainTestDataLength;
-                std::cout << e + 1 << "/" << epochs << " | accuracy: " << accuracy << " | loss: " << _loss << " | val_loss: " << _val_loss << std::endl;
-            }
-            e++;
-        }
-        accuracy = 0;
-        _val_loss = 0;
-        if (testDataLength > 0)
-        {
-            while (inputsStream && outputsLayers && cont < trainDataLength + trainTestDataLength + testDataLength)
-            {
-                std::getline(inputsStream, SInputs);
-                std::getline(expectedOutputsStream, SExpectedOutputs);
-                if (SInputs.size() != 0 || SExpectedOutputs.size() != 0)
-                {
-                    cont++;
-
-                    EMatrix *MInput(get_next_matrix_data_from_stream(SInputs));
-                    EMatrix *MexpectedOutput(get_next_matrix_data_from_stream(SExpectedOutputs));
-
-                    FeedFoward(*MInput);
-
-                    _ponto aux_loss = loss(MexpectedOutput, outputsLayers[outputLayerIndex]);
-                    if (aux_loss < limiteLoss)
-                        accuracy++;
-                    _val_loss += aux_loss;
-
-                    delete MInput;
-                    delete MexpectedOutput;
-                }
-            }
-            accuracy /= testDataLength;
-            _val_loss /= testDataLength;
-            std::cout << "Accuracy testes: " << accuracy << " | val_loss: " << _val_loss << std::endl;
-        }
-
-        inputsStream.close();
-        expectedOutputsStream.close();
-    }
-    else
-    {
-        std::cout << "erro ao abrir arquivos" << std::endl;
+        std::cout << "Erro ao abrir arquivos" << std::endl;
         return -1;
     }
+
+    for(size_t e = 0; e < epochs; e++)
+    {
+        inputsStream.clear();
+        expectedOutputsStream.clear();
+        inputsStream.seekg(0);
+        expectedOutputsStream.seekg(0);
+
+        fileCursor = 0;
+
+        //TRAIN
+
+        accuracy = 0.0;        
+        loss = 0.0;
+        
+        while (inputsStream && outputsLayers && fileCursor < trainDataLength)
+        {
+            std::getline(inputsStream, SInputs);
+            std::getline(expectedOutputsStream, SExpectedOutputs);
+            if (SInputs.size() != 0 || SExpectedOutputs.size() != 0)
+            {
+                fileCursor++;
+
+                EMatrix *MInput(get_next_matrix_data_from_stream(SInputs));
+                EMatrix *MexpectedOutput(get_next_matrix_data_from_stream(SExpectedOutputs));
+
+                FeedFoward(*MInput);
+                ComputeError(*MexpectedOutput);
+                BackPropagation(*MInput);
+
+                loss += metricFunction(MexpectedOutput, outputsLayers[outputLayerIndex]);
+                accuracy += eAccuracy(MexpectedOutput, outputsLayers[outputLayerIndex]);
+
+                delete MInput;
+                delete MexpectedOutput;
+            }
+        }
+        loss /= trainDataLength;
+        accuracy /= trainDataLength;
+
+        //TEST
+
+        validationAccuracy = 0.0;
+        validationLoss = 0.0;
+
+        while (inputsStream && outputsLayers && fileCursor < trainDataLength + trainTestDataLength)
+        {
+            std::getline(inputsStream, SInputs);
+            std::getline(expectedOutputsStream, SExpectedOutputs);
+            if (SInputs.size() != 0 || SExpectedOutputs.size() != 0)
+            {
+                fileCursor++;
+
+                EMatrix *MInput(get_next_matrix_data_from_stream(SInputs));
+                EMatrix *MexpectedOutput(get_next_matrix_data_from_stream(SExpectedOutputs));
+
+                FeedFoward(*MInput);
+
+                validationLoss += metricFunction(MexpectedOutput, outputsLayers[outputLayerIndex]);
+                validationAccuracy += eAccuracy(MexpectedOutput, outputsLayers[outputLayerIndex]);
+
+                delete MInput;
+                delete MexpectedOutput;
+            }
+        }
+
+        validationAccuracy /= trainTestDataLength;
+        validationLoss /= trainTestDataLength;
+
+        std::cout << e + 1 << "/" << epochs << " | accuracy: " << accuracy << " | validation_accuracy: " << validationAccuracy << " | loss: " << loss << " | validation_loss: " << validationLoss << std::endl;
+    }
+
+    //TESTS ROUTINE
+
+    accuracy = 0.0;
+    loss = 0.0;
+
+    if (testDataLength > 0)
+    {
+        while (inputsStream && outputsLayers && fileCursor < trainDataLength + trainTestDataLength + testDataLength)
+        {
+            std::getline(inputsStream, SInputs);
+            std::getline(expectedOutputsStream, SExpectedOutputs);
+            if (SInputs.size() != 0 || SExpectedOutputs.size() != 0)
+            {
+                fileCursor++;
+
+                EMatrix *MInput(get_next_matrix_data_from_stream(SInputs));
+                EMatrix *MexpectedOutput(get_next_matrix_data_from_stream(SExpectedOutputs));
+
+                FeedFoward(*MInput);
+
+                loss += metricFunction(MexpectedOutput, outputsLayers[outputLayerIndex]);
+                accuracy += eAccuracy(MexpectedOutput, outputsLayers[outputLayerIndex]);
+
+                delete MInput;
+                delete MexpectedOutput;
+            }
+        }
+        accuracy /= testDataLength;
+        loss /= testDataLength;
+        std::cout << "Accuracy testes: " << accuracy << " | loss: " << loss << std::endl;
+    }
+
+    inputsStream.close();
+    expectedOutputsStream.close();
 
     return accuracy;
 }
 
 #else
-float ENeuralNetwork::Train(const EMatrix *inputs, const EMatrix *expectedOutputs, const int dataLength, const float testsPercentage, const int epochs)
+float ENeuralNetwork::Train(const EMatrix *inputs, const EMatrix *expectedOutputs, const int dataLength, const double testsPercentage, const size_t epochs)
 {
-    int testDataLength = (int)((dataLength * testsPercentage) / 100);        // x% para testes ao final
-    int trainTestDataLength = (int)(dataLength * 0.05);                                // 5% para testes durante treinamento
-    int trainDataLength = dataLength - testDataLength - trainTestDataLength; // o restante para treinamento
+    int testDataLength = (int)((dataLength * testsPercentage) / 100.0);
+    int trainTestDataLength = (int)(dataLength * testDataInTrainPercentage);
+    int trainDataLength = dataLength - testDataLength - trainTestDataLength;
 
-    size_t cont = 0;
-    float accuracy = 0;
-    float loss = 1;
+    size_t cursor = 0;
+
+    double accuracy = 0.0;
+    double loss = 0.0;
+    double validationLoss = 0.0;
+    double validationAccuracy = 0.0;
+
+    //TRAIN ROUTINE
     for (size_t e = 0; e < epochs; e++)
     {
-        if ((accuracy < 1 && loss > 0.001) || dataLength < 50)
+        cursor = 0;
+
+        //TRAIN
+
+        accuracy = 0.0;
+        loss = 0.0;
+
+        while (cursor < trainDataLength)
         {
-            cont = 0;
-            accuracy = 0;
-            loss = 0;
-            while (cont < trainDataLength)
-            {
-                FeedFoward(inputs[cont]);
-                ComputeError(expectedOutputs[cont]);
-                BackPropagation(inputs[cont]);
-                cont++;
-            }
+            FeedFoward(inputs[cursor]);
+            ComputeError(expectedOutputs[cursor]);
+            BackPropagation(inputs[cursor]);
 
-            while (cont < trainDataLength + trainTestDataLength)
-            {
-                    // if(RealizarTeste(inputs[cont], expectedOutputs[cont]))
-                    // {
-                        // accuracy++;
-                    // }
+            loss += metricFunction(&expectedOutputs[cursor], outputsLayers[outputLayerIndex]);
+            accuracy += eAccuracy(&expectedOutputs[cursor], outputsLayers[outputLayerIndex]);
 
-                //     loss += loss(expectedOutputs[cont], outputsLayers[outputLayerIndex]);
-                //     cont++;
-            }
-            accuracy /= trainTestDataLength;
-            loss /= trainTestDataLength;
-            Serial.println(String(e + 1) + "/" + String(epochs) + " | accuracy: " + String(accuracy) + " | val_loss: " + String(loss));
+            cursor++;
         }
+
+        //TEST
+
+        validationAccuracy = 0.0;
+        validationLoss = 0.0;
+
+        while (cursor < trainDataLength + trainTestDataLength)
+        {
+            FeedFoward(inputs[cursor]);
+
+            validationLoss += metricFunction(&expectedOutputs[cursor], outputsLayers[outputLayerIndex]);
+            validationAccuracy += eAccuracy(&expectedOutputs[cursor], outputsLayers[outputLayerIndex]);
+
+            cursor++;
+        }
+
+        validationAccuracy /= trainTestDataLength;
+        validationLoss /= trainTestDataLength;
+
+        Serial.println(String(e + 1) + "/" + String(epochs) + " | accuracy: " + String(accuracy) + " | validation_accuracy: " + String(validationAccuracy) + " | loss: " + String(loss) + " | validation_loss: " + String(validationLoss));
     }
-    accuracy = 0;
-    loss = 0;
+
+    //TEST ROUTINE
+    
+    accuracy = 0.0;
+    loss = 0.0;
+
     if (testDataLength > 0)
     {
-        while (cont < trainDataLength + trainTestDataLength + testDataLength)
+        while (cursor < trainDataLength + trainTestDataLength + testDataLength)
         {
-            // if(RealizarTeste(inputs[cont], expectedOutputs[cont]))
-            // {
-                // accuracy++;
-            // }
+            FeedFoward(inputs[cursor]);
 
-            // loss+=loss(expectedOutputs[cont], outputsLayers[outputLayerIndex]);
+            validationLoss += metricFunction(&expectedOutputs[cursor], outputsLayers[outputLayerIndex]);
+            validationAccuracy += eAccuracy(&expectedOutputs[cursor], outputsLayers[outputLayerIndex]);
 
-            // cont++;
+            cursor++;
         }
+
         accuracy /= testDataLength;
         loss /= testDataLength;
+
         Serial.println("Accuracy testes: " + String(accuracy) + " | loss: " + String(loss));
     }
+
     return accuracy;
 }
 #endif
@@ -564,17 +596,33 @@ void ENeuralNetwork::ChangeActivationFunction(int function, int layer)
     }
 }
 
-bool ENeuralNetwork::RealizarTeste(const EMatrix *entradas, const EMatrix *outputsLayersEsperadas)
+void ENeuralNetwork::ChangeMetricFunction(int function)
 {
-    FeedFoward(*entradas);
-
-    // outputsLayers[outputLayerIndex]->binary();
-    double l = 0.01;
-
-    if (loss(outputsLayersEsperadas, outputsLayers[outputLayerIndex]) < l){
-        return true;
+    switch(function){
+        case MetricFunction::_eMeanError:
+            metricFunction = eMean_error;
+            break;
+        case MetricFunction::_eMeanSquaredError:
+            metricFunction = eMean_squared_error;
+            break;
+        case MetricFunction::_eMeanAbsoluteError:
+            metricFunction = eMean_absolute_error;
+            break;
+        case MetricFunction::_eMeanAbsolutePercentageError:
+            metricFunction = eMean_absolute_percentage_error;
+            break;
+        case MetricFunction::_eAccuracy:
+            metricFunction = eMean_squared_error;
+            break;
+        case MetricFunction::_eBinaryAccuracy:
+            metricFunction = eMean_squared_error;
+            break;
+        case MetricFunction::_eSum:
+            metricFunction = eSum;
+            break;
+        default:
+            return;
     }
-    return false;
 }
 
 //----------------------FUNCOES AUXILIARES---------------------//
@@ -618,30 +666,5 @@ EMatrix *get_next_matrix_data_from_stream(const std::string linha)
     free(dados);
 
     return coleta;
-}
-
-_ponto get_max_value_of_data_stream(const std::string caminho)
-{
-    _ponto max = -1;
-    std::fstream arquivo;
-    std::string linha;
-    std::string valor;
-
-    arquivo.open(caminho);
-
-    do
-    {
-        getline(arquivo, linha);
-        std::istringstream iss(linha);
-        while (std::getline(iss, valor, ' '))
-        {
-            _ponto novoValor = std::stof(valor);
-            if (novoValor > max)
-                max = novoValor;
-        }
-
-    } while (arquivo);
-
-    return max;
 }
 #endif

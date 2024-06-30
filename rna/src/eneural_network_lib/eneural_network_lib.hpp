@@ -7,6 +7,7 @@
 
 #include "../ematrix_lib/ematrix_lib.hpp"
 
+
 struct ENeuralNetwork{
     _ponto learningRate;
     size_t layersNumber;
@@ -15,8 +16,12 @@ struct ENeuralNetwork{
     size_t *layersStructure;
     funType *funLayers;
     funType *DfunLayers;
+    metricFun metricFunction;
+    
     size_t outputLayerIndex;
     unsigned long allocatedBytes;
+    double testDataInTrainPercentage = 0.05;
+
 
     EMatrix **weightsLayers;
     EMatrix **biasLayers;
@@ -39,20 +44,20 @@ struct ENeuralNetwork{
     void FeedFoward(EMatrix inputs); 
     void ComputeError(EMatrix expectedOutputs);
     void BackPropagation(EMatrix inputs);  
-    bool RealizarTeste(const EMatrix *entradas,const EMatrix *saidasEsperadas);
+    bool get_accuracy(const EMatrix *inputs, const EMatrix *expectedOutputs);
     void ChangeActivationFunction(int function, int layer);
+    void ChangeMetricFunction(int function);
 
     #if defined __linux__
-    float Train(const std::string &pathInputs, const std::string &pathExpectedOutputs, const float testsPercentage, const int epochs, const _ponto coeficienteErro);
+    float Train(const std::string &pathInputs, const std::string &pathExpectedOutputs, const double testsPercentage, const size_t epochs);
     #else
-    float Train(const EMatrix *inputs, const EMatrix *outputs, const int dataLength, const float testsPercentage, const int epochs);
+    float Train(const EMatrix *inputs, const EMatrix *outputs, const int dataLength, const double testsPercentage, const size_t epochs);
     #endif
 };
 
 #if defined __linux__
 EMatrix *get_next_matrix_data_from_stream(const std::string linha);
 unsigned long get_stream_data_len(const std::string caminho);
-_ponto get_max_value_of_data_stream(const std::string caminho);
 #endif
 
 #endif //ENEURAL_NETWORK_LIB_HPP
