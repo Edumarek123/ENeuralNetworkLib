@@ -303,6 +303,21 @@ O arquivo `todo` do projeto registra itens ainda pendentes, incluindo:
 - Adicionar opções de métricas e funções de perda.
 - Expandir a documentação.
 
+
+## Documentação técnica
+
+A documentação detalhada foi organizada em [`docs/`](docs/README.md):
+
+- [Arquitetura e organização das implementações](docs/architecture.md)
+- [Instalação e compilação no Linux e Arduino](docs/build.md)
+- [Referência da classe ENeuralNetwork](docs/neural-network.md)
+- [Referência da classe EMatrix e operações numéricas](docs/matrix.md)
+- [Formato dos dados, treinamento e métricas](docs/data-and-training.md)
+- [Exemplos de utilização](docs/examples.md)
+- [Limitações conhecidas e roadmap técnico](docs/known-limitations.md)
+
+As páginas distinguem a implementação principal em `src/` da variante `rna/src/`, cujas APIs não são intercambiáveis.
+
 ## Contribuindo
 
 Sugestões, correções e melhorias são bem-vindas. Ao propor uma alteração:
