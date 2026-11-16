@@ -1,7 +1,7 @@
 # ENeuralNetworkLib
 
 <p align="center">
-  <strong>Uma biblioteca experimental de redes neurais em C++ com foco em aplicações embarcadas.</strong>
+  <strong>An experimental C++ neural-network library focused on embedded applications.</strong>
 </p>
 
 <p align="center">
@@ -13,89 +13,89 @@
 
 ---
 
-## Visão geral
+## Overview
 
-**ENeuralNetworkLib** é um projeto em C++ para implementação e experimentação com redes neurais *feedforward*. A biblioteca reúne duas partes principais:
+**ENeuralNetworkLib** is a C++ project for implementing and experimenting with feedforward neural networks. The library has two main components:
 
-- **ENeuralNetwork:** estrutura da rede, camadas, pesos, bias, propagação direta e retropropagação.
-- **EMatrix:** operações matriciais utilizadas nos cálculos da rede, incluindo multiplicação de matrizes, transposição, operações elemento a elemento e funções de ativação.
+- **ENeuralNetwork:** network structure, layers, weights, biases, forward propagation, and backpropagation.
+- **EMatrix:** matrix operations used by the network, including matrix multiplication, transposition, element-wise operations, and activation functions.
 
-O código possui caminhos condicionais para execução em Linux e em placas Arduino, com impressão adaptada a `std::cout` ou `Serial`.
+Conditional compilation paths support Linux and Arduino boards, with output adapted to `std::cout` or `Serial`.
 
-> **Estado do projeto:** experimental e em desenvolvimento. O repositório contém código-fonte, uma implementação principal na raiz e uma variante dentro de `rna/`. Algumas rotinas — especialmente treinamento embarcado e exportação — ainda precisam de validação e/ou implementação completa. Consulte as observações deste README antes de integrar a biblioteca a um projeto de produção.
+> **Project status:** Experimental and under active development. The repository contains source code, a primary implementation in the repository root, and a separate variant under `rna/`. Some routines—especially embedded training and export—still require validation and/or complete implementation. Review the notes in this README before integrating the library into a production project.
 
-## Arquitetura
+## Architecture
 
-A estrutura principal da rede é definida por:
+The main network structure follows this pattern:
 
 ```text
 Input layer → Hidden layer(s) → Output layer
 ```
 
-O construtor recebe a quantidade de entradas, a quantidade de saídas, a estrutura das camadas ocultas e a taxa de aprendizado. Pesos e bias são mantidos por camada.
+The constructor receives the number of inputs, the number of outputs, the hidden-layer structure, and the learning rate. Weights and biases are maintained per layer.
 
-### Componentes
+### Components
 
-| Componente | Responsabilidade |
+| Component | Responsibility |
 |---|---|
-| `ENeuralNetwork` | Estrutura e operações da rede neural |
-| `EMatrix` | Armazenamento e operações com matrizes |
-| `ActivationFunction` | Identificadores das funções de ativação |
-| `FeedFoward()` | Calcula as ativações até a camada de saída |
-| `ComputeError()` | Calcula os erros usados na retropropagação |
-| `BackPropagation()` | Atualiza pesos e bias usando a taxa de aprendizado |
-| `Train()` | Rotina de treinamento, com assinatura diferente entre Linux e Arduino |
+| `ENeuralNetwork` | Neural-network structure and operations |
+| `EMatrix` | Matrix storage and operations |
+| `ActivationFunction` | Activation-function identifiers |
+| `FeedFoward()` | Computes activations through the output layer |
+| `ComputeError()` | Computes errors used during backpropagation |
+| `BackPropagation()` | Updates weights and biases using the learning rate |
+| `Train()` | Training routine, with different signatures for Linux and Arduino |
 
-## Funcionalidades encontradas
+## Implemented features
 
-### Rede neural
+### Neural network
 
-- Configuração de número de entradas e saídas.
-- Configuração de uma ou mais camadas ocultas.
-- Inicialização de pesos e bias por meio de `EMatrix`.
-- Propagação direta (*feedforward*).
-- Cálculo de erro e retropropagação (*backpropagation*).
-- Seleção de função de ativação por camada.
-- Impressão da estrutura e dos pesos/bias.
-- Rotinas de treinamento específicas para desktop e ambiente Arduino.
+- Configure the number of input and output nodes.
+- Configure one or more hidden layers.
+- Initialize weights and biases through `EMatrix`.
+- Forward propagation (*feedforward*).
+- Error calculation and backpropagation.
+- Select an activation function per layer.
+- Print the network structure, weights, and biases.
+- Platform-specific training routines for desktop and Arduino environments.
 
-### Operações matriciais
+### Matrix operations
 
-A classe `EMatrix` oferece operações de soma, multiplicação de Hadamard, multiplicação escalar e aplicação de função a cada elemento.
+The `EMatrix` class provides addition, Hadamard multiplication, scalar multiplication, and element-wise function application.
 
-Também existem funções livres para subtração, multiplicação escalar, produto matricial, transposição, mapeamento de função, comparação, *softmax*, binarização e cálculo de perda.
+The main API also provides free functions for subtraction, scalar multiplication, matrix multiplication, transposition, function mapping, comparison, *softmax*, binarization, and loss calculation.
 
-### Funções de ativação
+### Activation functions
 
-Na implementação principal da raiz, os identificadores disponíveis são:
+The activation-function identifiers available in the primary root implementation are:
 
-| Identificador | Função |
+| Identifier | Function |
 |---|---|
-| `ActivationFunction::_eSigmoid` | Sigmoide |
+| `ActivationFunction::_eSigmoid` | Sigmoid |
 | `ActivationFunction::_eRelu` | ReLU |
-| `ActivationFunction::_eTahn` | Tangente hiperbólica |
-| `ActivationFunction::_eSin` | Seno |
+| `ActivationFunction::_eTahn` | Hyperbolic tangent |
+| `ActivationFunction::_eSin` | Sine |
 
-A rede inicializa as camadas com sigmoide. A função pode ser alterada com `ChangeActivationFunction(function, layer)`.
+All layers are initialized with sigmoid. You can change a layer's activation function with `ChangeActivationFunction(function, layer)`.
 
-## Requisitos
+## Requirements
 
-Para compilar a versão desktop na raiz:
+To build the desktop version in the repository root:
 
-- Linux ou ambiente compatível com GNU Make.
-- Compilador C++ (`g++` no Makefile atual).
+- Linux or an environment compatible with GNU Make.
+- A C++ compiler (`g++` in the current Makefile).
 - GNU Make.
-- Biblioteca ENet disponível no ambiente de linkedição, pois o Makefile adiciona `-lenet`.
+- The ENet library available to the linker, because the Makefile adds `-lenet`.
 
-Para Arduino:
+For Arduino:
 
-- Arduino IDE ou toolchain equivalente.
-- Core da placa selecionada.
-- Os arquivos-fonte e cabeçalhos da biblioteca adicionados ao projeto.
+- Arduino IDE or an equivalent toolchain.
+- The selected board's Arduino core.
+- The library source and header files added to your project.
 
-O código utiliza recursos de C++ e bibliotecas padrão como `<math.h>`, `<iostream>`, `<fstream>` e `<sstream>` nos caminhos desktop. A compatibilidade exata depende do core e do compilador da placa.
+The desktop code uses C++ and standard libraries such as `<math.h>`, `<iostream>`, `<fstream>`, and `<sstream>`. Exact compatibility depends on the board core and compiler.
 
-## Estrutura do repositório
+## Repository structure
 
 ```text
 ENeuralNetworkLib/
@@ -116,43 +116,43 @@ ENeuralNetworkLib/
         └── eneural_network_lib/
 ```
 
-A pasta `src/` da raiz é a implementação principal descrita nas assinaturas deste README. A pasta `rna/` mantém uma variante separada, com diferenças na API de métricas, tolerância e exportação. Não misture arquivos das duas árvores no mesmo build: os cabeçalhos e as assinaturas não são idênticos.
+The root `src/` directory is the primary implementation described by the API signatures in this README. The `rna/` directory contains a separate variant with differences in its metrics, tolerance, and export APIs. Do not mix files from the two trees in the same build: their headers and function signatures are not identical.
 
-> O repositório também contém arquivos de build (`.o` e executáveis) versionados. Em novos builds, prefira limpar e recompilar a partir dos fontes.
+> The repository also contains versioned build artifacts (`.o` files and executables). For new builds, clean the project and recompile from source.
 
-## Compilação no Linux
+## Building on Linux
 
-Na raiz do repositório:
+From the repository root:
 
 ```bash
 make build
 ```
 
-O alvo `build` compila os arquivos `.cpp` encontrados pelo Makefile e gera o executável `main`. Para executar:
+The `build` target compiles the `.cpp` files found by the Makefile and creates the `main` executable. Run it with:
 
 ```bash
 ./main
 ```
 
-O alvo padrão `all` executa limpeza, compilação e execução em sequência:
+The default `all` target runs cleaning, compilation, and execution in sequence:
 
 ```bash
 make
 ```
 
-Outros alvos disponíveis:
+Other available targets:
 
 ```bash
-make clean  # remove objetos e executável
-make debug  # abre o executável no GDB
-make leak   # executa a análise com Valgrind
+make clean  # remove object files and executable
+make debug  # launch the executable in GDB
+make leak   # run the analysis with Valgrind
 ```
 
-O alvo `leak` requer Valgrind instalado. O link do Makefile inclui `-lenet`; caso ENet não esteja instalada, será necessário instalar a dependência ou ajustar `NETFLAGS` se ela não for necessária para seu ambiente.
+The `leak` target requires Valgrind. The Makefile links with `-lenet`; if ENet is not installed, install the dependency or adjust `NETFLAGS` if it is not required in your environment.
 
-## Primeiros passos
+## Getting started
 
-O exemplo abaixo demonstra a construção de uma rede com duas entradas, uma camada oculta de dois neurônios e uma saída:
+The following example creates a network with two inputs, one hidden layer containing two neurons, and one output:
 
 ```cpp
 #include "src/eneural_network_lib/eneural_network_lib.hpp"
@@ -162,11 +162,11 @@ int main()
     int hiddenLayers[] = {2};
 
     ENeuralNetwork network(
-        2,            // número de entradas
-        1,            // número de saídas
-        hiddenLayers,  // neurônios por camada oculta
-        1,            // quantidade de camadas ocultas
-        0.1           // taxa de aprendizado
+        2,             // number of inputs
+        1,             // number of outputs
+        hiddenLayers,  // neurons in each hidden layer
+        1,             // number of hidden layers
+        0.1            // learning rate
     );
 
     network.print();
@@ -175,7 +175,7 @@ int main()
 }
 ```
 
-O objeto recebe a topologia no construtor:
+The constructor receives the network topology:
 
 ```cpp
 ENeuralNetwork(
@@ -187,11 +187,11 @@ ENeuralNetwork(
 );
 ```
 
-Para uma rede sem camadas ocultas, use `hiddenLayersNumber = 0`. O ponteiro de camadas ocultas não será percorrido nesse caso.
+For a network without hidden layers, set `hiddenLayersNumber = 0`. The hidden-layer pointer is not traversed in this case.
 
-## Usando EMatrix
+## Using EMatrix
 
-`EMatrix` representa uma matriz dinâmica de valores do tipo `_ponto` (definido como `double`):
+`EMatrix` represents a dynamic matrix of `_ponto` values (defined as `double`):
 
 ```cpp
 #include "src/ematrix_lib/ematrix_lib.hpp"
@@ -211,7 +211,7 @@ int main()
 }
 ```
 
-Operações matriciais livres disponíveis na API principal:
+Free matrix operations available in the primary API:
 
 ```cpp
 EMatrix C = sub(&A, &B);
@@ -223,11 +223,11 @@ EMatrix S = softmax(&A);
 EMatrix Binarized = binary(&A);
 ```
 
-A multiplicação matricial exige dimensões compatíveis: o número de colunas da primeira matriz deve corresponder ao número de linhas da segunda.
+Matrix multiplication requires compatible dimensions: the number of columns in the first matrix must match the number of rows in the second matrix.
 
-## Treinamento e dados
+## Training and data
 
-Na versão principal, a assinatura de treinamento varia por plataforma.
+In the primary implementation, the training function signature differs by platform.
 
 **Linux:**
 
@@ -241,9 +241,9 @@ float Train(
 );
 ```
 
-Os arquivos são lidos linha a linha. A rotina auxiliar `get_next_matrix_data_from_stream()` separa valores usando espaço (` `) e converte cada valor para `_ponto`. Portanto, os arquivos de entrada e saída devem ter linhas correspondentes e valores separados por espaços.
+Files are read line by line. The helper function `get_next_matrix_data_from_stream()` splits values using a space (` `) and converts each value to `_ponto`. Therefore, input and expected-output files must have matching lines, with values separated by spaces.
 
-Exemplo de formato:
+Example format:
 
 ```text
 0.0 1.0
@@ -251,7 +251,7 @@ Exemplo de formato:
 0.5 0.5
 ```
 
-Use um arquivo para entradas e outro para saídas esperadas, mantendo a mesma quantidade e ordem de linhas.
+Use one file for inputs and another for expected outputs, keeping the same number and order of lines in both files.
 
 **Arduino:**
 
@@ -265,11 +265,11 @@ float Train(
 );
 ```
 
-A rotina embarcada está presente no código, mas partes da validação/métrica aparecem comentadas. Considere-a incompleta até implementar e testar o fluxo de avaliação para a placa escolhida.
+The embedded routine is present in the code, but parts of its validation and metric calculations are commented out. Consider it incomplete until the evaluation workflow has been implemented and tested on the target board.
 
-## Escolhendo a função de ativação
+## Selecting an activation function
 
-A API principal permite configurar a ativação de uma camada pelo índice:
+The primary API lets you configure a layer's activation function by index:
 
 ```cpp
 network.ChangeActivationFunction(
@@ -278,61 +278,62 @@ network.ChangeActivationFunction(
 );
 ```
 
-Os índices começam em zero e identificam as camadas de transformação (não a camada de entrada). A rede é inicializada com sigmoide em todas as camadas.
+Indices start at zero and identify transformation layers (not the input layer). The network initializes all layers with sigmoid.
 
-## Limitações conhecidas
+## Known limitations
 
-Este repositório está em desenvolvimento. A leitura do código atual mostra pontos que merecem atenção antes de uso em aplicações críticas:
+This repository is under development. The current code has several areas that should be reviewed before use in critical applications:
 
-- **Treinamento Arduino:** a rotina possui trechos de cálculo de validação e teste comentados.
-- **Exportação:** `eexport()` na versão principal do Linux escreve um cabeçalho com um caminho de include aparentemente incorreto; valide o arquivo gerado antes de utilizá-lo. A implementação Arduino dessa rotina está vazia.
-- **Dimensões:** várias operações matriciais pressupõem dimensões compatíveis e não fazem validação completa dos argumentos.
-- **Memória:** a classe `EMatrix` gerencia memória manualmente. Faça testes de cópia, vida útil e uso intensivo antes de aplicações longas.
-- **Treinamento:** revise a divisão entre treino, validação e teste, e valide os resultados com conjuntos de dados conhecidos.
-- **Arquivos:** a rotina de leitura espera valores numéricos separados por espaço e não implementa um parser CSV genérico.
+- **Arduino training:** parts of the validation and test calculations are commented out.
+- **Export:** `eexport()` in the primary Linux implementation writes a header with an apparently incorrect include path; validate generated files before using them. The Arduino implementation of this routine is empty.
+- **Dimensions:** several matrix operations assume compatible dimensions and do not fully validate their arguments.
+- **Memory:** `EMatrix` manages memory manually. Test copying, object lifetimes, and intensive use before relying on it in long-running applications.
+- **Training:** review the split between training, validation, and test data, and validate results against known datasets.
+- **Files:** the data reader expects numeric values separated by spaces; it is not a generic CSV parser.
 
-As observações acima descrevem o estado do código consultado; não representam uma garantia de comportamento em todas as plataformas.
+These notes describe the code reviewed for this README and do not guarantee behavior on every platform.
 
 ## Roadmap
 
-O arquivo `todo` do projeto registra itens ainda pendentes, incluindo:
+The project's `todo` file lists pending work, including:
 
-- Finalizar a exportação para Arduino.
-- Ajustar o cálculo dos tamanhos dos conjuntos de dados nas rotinas de treinamento.
-- Completar o treinamento para Arduino.
-- Adicionar opções de métricas e funções de perda.
-- Expandir a documentação.
+- Complete Arduino export.
+- Adjust dataset-size calculations in the training routines.
+- Complete Arduino training.
+- Add metric and loss-function options.
+- Expand the documentation.
 
+## Technical documentation
 
-## Documentação técnica
+Detailed documentation is available in [`docs/`](docs/README.md):
 
-A documentação detalhada foi organizada em [`docs/`](docs/README.md):
+- [Architecture and implementation layout](docs/architecture.md)
+- [Installation and building on Linux and Arduino](docs/build.md)
+- [ENeuralNetwork class reference](docs/neural-network.md)
+- [EMatrix class and numerical operations reference](docs/matrix.md)
+- [Data format, training, and metrics](docs/data-and-training.md)
+- [Usage examples](docs/examples.md)
+- [Known limitations and technical roadmap](docs/known-limitations.md)
 
-- [Arquitetura e organização das implementações](docs/architecture.md)
-- [Instalação e compilação no Linux e Arduino](docs/build.md)
-- [Referência da classe ENeuralNetwork](docs/neural-network.md)
-- [Referência da classe EMatrix e operações numéricas](docs/matrix.md)
-- [Formato dos dados, treinamento e métricas](docs/data-and-training.md)
-- [Exemplos de utilização](docs/examples.md)
-- [Limitações conhecidas e roadmap técnico](docs/known-limitations.md)
+These pages distinguish the primary implementation in `src/` from the `rna/src/` variant, whose APIs are not interchangeable.
 
-As páginas distinguem a implementação principal em `src/` da variante `rna/src/`, cujas APIs não são intercambiáveis.
+## Contributing
 
-## Contribuindo
+Suggestions, bug reports, and improvements are welcome. When proposing a change:
 
-Sugestões, correções e melhorias são bem-vindas. Ao propor uma alteração:
+1. Describe the problem or improvement.
+2. Include a minimal reproducible example when applicable.
+3. Specify the platform, compiler, and Arduino core version when relevant.
+4. Test the change on the target platform and document known limitations.
 
-1. Descreva o problema ou a melhoria.
-2. Inclua um exemplo mínimo reproduzível quando aplicável.
-3. Informe plataforma, compilador e versão do core Arduino (quando pertinente).
-4. Teste a alteração na plataforma alvo e documente limitações conhecidas.
+## License
 
-## Licença
+This project is licensed under the **GNU General Public License v3.0 only (GPL-3.0-only)**. You may use, study, modify, and redistribute this project under the terms of the license.
 
-Nenhum arquivo de licença foi identificado na raiz do repositório no momento da documentação. Consulte o proprietário antes de redistribuir ou incorporar o código em outro projeto.
+See [LICENSE](LICENSE) for the complete license text. Third-party components and assets remain subject to their own licenses and notices.
 
 ---
 
 <p align="center">
-  Feito por <a href="https://github.com/Edumarek123">Eduardo Marek</a>
+  Created by <a href="https://github.com/Edumarek123">Eduardo Marek</a>
 </p>
